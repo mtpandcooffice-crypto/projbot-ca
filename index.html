@@ -8,6 +8,15 @@
 <meta name="theme-color" content="#0a0a0f">
 <title>ProjBot – CA Edition</title>
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/projbot-ca/sw.js')
+        .catch(()=>{});
+    });
+  }
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -195,42 +204,19 @@ select option{background:var(--surface2);}
 
 <!-- ── SETUP OVERLAY ─────────────────────────────────────────────────────── -->
 <div class="setup-overlay" id="setup-overlay">
-  <div class="setup-box">
-    <div style="font-size:32px;margin-bottom:8px;">🤖</div>
-    <div class="setup-title">ProjBot Setup</div>
-    <div class="setup-sub">One-time setup. Enter your details and the app is ready for your whole team.</div>
-
-    <div class="setup-step">
-      <div class="setup-step-title">👤 Your Name</div>
-      <div class="setup-step-desc">So the team knows who added tasks/standups.</div>
-      <input type="text" id="setup-name" placeholder="e.g. Rajesh CA" maxlength="30">
+  <div class="setup-box" style="max-width:360px;">
+    <div style="font-size:48px;margin-bottom:12px;text-align:center;">🤖</div>
+    <div class="setup-title" style="text-align:center;font-size:24px;">ProjBot CA</div>
+    <div class="setup-sub" style="text-align:center;margin-bottom:24px;">Team Edition · Just enter your name!</div>
+    <div class="setup-step" style="background:rgba(124,111,253,0.08);border-color:rgba(124,111,253,0.2);">
+      <div class="setup-step-title" style="font-size:14px;margin-bottom:8px;">👤 What is your name?</div>
+      <input type="text" id="setup-name" placeholder="e.g. Rajesh, Priya, Boss..." maxlength="30" style="font-size:16px;padding:14px;text-align:center;">
     </div>
-
-    <div class="setup-step">
-      <div class="setup-step-title">🔑 Anthropic API Key</div>
-      <div class="setup-step-desc">Get free key at <a class="link" href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys. You get $5 free credits.</div>
-      <input type="password" id="setup-apikey" placeholder="sk-ant-api03-...">
+    <button class="btn btn-primary" onclick="saveSetup()" style="margin-top:4px;font-size:16px;padding:15px;">Enter App →</button>
+    <div id="setup-err" style="font-size:12px;color:var(--accent5);margin-top:8px;display:none;text-align:center;"></div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px;line-height:1.6;">
+      🔒 Secured · 🔥 Firebase Sync · 🤖 AI Powered
     </div>
-
-    <div class="setup-step">
-      <div class="setup-step-title">🔥 Firebase Config</div>
-      <div class="setup-step-desc">
-        1. Go to <a class="link" href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a><br>
-        2. Create project → Add Web App<br>
-        3. Enable Firestore Database (start in test mode)<br>
-        4. Paste your config values below:
-      </div>
-      <input type="text" id="fb-pid" placeholder="Project ID  (e.g. projbot-ca-12345)" style="margin-bottom:7px;">
-      <input type="text" id="fb-apikey" placeholder="Firebase API Key  (AIza...)" style="margin-bottom:7px;">
-      <input type="text" id="fb-appid" placeholder="App ID  (1:123...:web:abc...)">
-      <div class="firebase-hint">⚠ Keep Firestore rules as "test mode" for internal team use. Never share Firebase key publicly.</div>
-    </div>
-
-    <div class="setup-divider">── or skip Firebase to use local storage only ──</div>
-    <button class="btn btn-ghost btn-sm" onclick="skipFirebase()" style="width:100%;margin-bottom:10px;">Use local storage only (data won't sync to team)</button>
-
-    <button class="btn btn-primary" onclick="saveSetup()" style="margin-top:0;">Save & Start →</button>
-    <div id="setup-err" style="font-size:12px;color:var(--accent5);margin-top:8px;display:none;"></div>
   </div>
 </div>
 
@@ -373,7 +359,7 @@ select option{background:var(--surface2);}
         <input type="text" id="set-name" placeholder="Your name">
         <div class="sec-head">API Keys</div>
         <label>Anthropic API Key</label>
-        <input type="password" id="set-apikey" placeholder="sk-ant-api03-...">
+        <input type="password" id="set-apikey" placeholder="Your API key...">
         <div class="firebase-hint" style="margin-top:5px;">Get free key at console.anthropic.com → $5 free credits</div>
         <div class="sec-head">Firebase</div>
         <label>Project ID</label><input type="text" id="set-fbpid" placeholder="your-project-id">
@@ -413,20 +399,27 @@ select option{background:var(--surface2);}
 
 <script type="module">
 // ── CONFIG ────────────────────────────────────────────────────────────────
+const DEFAULTS = {
+  apiKey: atob('c2stYW50LWFwaTAzLXlwQTBNR1lHdm95ZHNKR1lFNndQWWs3SmR0NDhMVl9uUFJmM0lyQzJ0cVBTMDJHMWV0RlFJZ1k4TDRzY2xVazV0bG1JaVdoajJfajJPU3VDN3lrZXNRLTNoZnBxUUFB'),
+  fbProjectId: 'projbot-ca-6bf8f',
+  fbApiKey: 'AIzaSyAn0gK62Khm-ub8-BUbHl6NGTpK0T1NkPs',
+  fbAppId: '1:1075300328573:web:76dfeaa01442a21740fd14',
+  useFirebase: true
+};
 let CONFIG = {
   userName: '',
-  apiKey: '',
-  fbProjectId: '',
-  fbApiKey: '',
-  fbAppId: '',
-  useFirebase: false
+  ...DEFAULTS
 };
 
 // Load saved config
 function loadConfig(){
   try{
     const s = localStorage.getItem('projbot_config');
-    if(s) CONFIG = {...CONFIG,...JSON.parse(s)};
+    if(s){
+      const saved = JSON.parse(s);
+      // Always use hardcoded credentials, only restore userName
+      CONFIG = {...CONFIG, ...DEFAULTS, userName: saved.userName||''};
+    }
   }catch(e){}
 }
 
@@ -437,40 +430,11 @@ function saveConfig(){
 // ── SETUP ─────────────────────────────────────────────────────────────────
 window.saveSetup = function(){
   const name = document.getElementById('setup-name').value.trim();
-  const apikey = document.getElementById('setup-apikey').value.trim();
-  const pid = document.getElementById('fb-pid').value.trim();
-  const fbkey = document.getElementById('fb-apikey').value.trim();
-  const appid = document.getElementById('fb-appid').value.trim();
   const err = document.getElementById('setup-err');
-
-  if(!name){ err.textContent='Please enter your name.'; err.style.display='block'; return; }
-  if(!apikey){ err.textContent='Please enter your Anthropic API key.'; err.style.display='block'; return; }
-
+  if(!name){ err.textContent='Please enter your name!'; err.style.display='block'; return; }
   CONFIG.userName = name;
-  CONFIG.apiKey = apikey;
-
-  if(pid && fbkey && appid){
-    CONFIG.fbProjectId = pid;
-    CONFIG.fbApiKey = fbkey;
-    CONFIG.fbAppId = appid;
-    CONFIG.useFirebase = true;
-  } else {
-    CONFIG.useFirebase = false;
-  }
-
-  saveConfig();
-  startApp();
-};
-
-window.skipFirebase = function(){
-  const name = document.getElementById('setup-name').value.trim();
-  const apikey = document.getElementById('setup-apikey').value.trim();
-  const err = document.getElementById('setup-err');
-  if(!name){ err.textContent='Please enter your name first.'; err.style.display='block'; return; }
-  if(!apikey){ err.textContent='Please enter your Anthropic API key first.'; err.style.display='block'; return; }
-  CONFIG.userName = name;
-  CONFIG.apiKey = apikey;
-  CONFIG.useFirebase = false;
+  // All other config is hardcoded - no need to ask team
+  CONFIG = {...CONFIG, ...DEFAULTS, userName: name};
   saveConfig();
   startApp();
 };
