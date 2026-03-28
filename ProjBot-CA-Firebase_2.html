@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0f">
+<title>ProjBot – CA Edition</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c26;
+  --border:rgba(255,255,255,0.08);
+  --accent:#7c6ffd;--accent2:#f97316;--accent3:#22d3ee;
+  --accent4:#4ade80;--accent5:#fb7185;
+  --text:#f0f0f8;--muted:#7a7a8a;
+  --nav-h:62px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow:hidden;}
+.app{display:flex;flex-direction:column;height:100%;height:100dvh;}
+
+/* Topbar */
+.topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--border);}
+.topbar-logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:36px;height:36px;background:var(--accent);border-radius:10px;display:grid;place-items:center;font-size:17px;flex-shrink:0;}
+.logo-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;line-height:1;}
+.logo-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.status-pill{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--accent4);background:rgba(74,222,128,0.1);padding:5px 10px;border-radius:20px;}
+.status-pill.offline{color:var(--accent5);background:rgba(251,113,133,0.1);}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--accent4);animation:pulse 2s infinite;}
+.status-pill.offline .dot{background:var(--accent5);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Content */
+.content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,16px) + 8px);}
+.panel{display:none;padding:14px 14px 0;}
+.panel.active{display:block;animation:fadeUp .2s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Bottom nav */
+.bottom-nav{flex-shrink:0;display:flex;background:var(--surface);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom,0px);}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:var(--muted);font-size:9px;font-family:'DM Sans',sans-serif;cursor:pointer;padding:8px 2px;transition:color .15s;min-height:var(--nav-h);}
+.nav-btn.active{color:var(--accent);}
+.nav-btn .ni{font-size:19px;line-height:1;}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;}
+.card-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:3px;}
+.card-sub{font-size:12px;color:var(--muted);margin-bottom:12px;}
+
+/* Stats */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;}
+.stat-num{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:2px;}
+.pbar{background:var(--surface2);border-radius:99px;height:5px;overflow:hidden;margin-top:6px;}
+.pfill{height:100%;border-radius:99px;transition:width .5s ease;}
+
+/* Forms */
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px;margin-top:12px;}
+label:first-child{margin-top:0;}
+input,textarea,select{width:100%;padding:11px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border .2s;}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);}
+textarea{resize:vertical;min-height:68px;}
+select option{background:var(--surface2);}
+.btn{padding:12px 18px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.btn-primary{background:var(--accent);color:#fff;width:100%;margin-top:12px;display:block;text-align:center;}
+.btn-primary:active{background:#6a5ee8;}
+.btn-sm{padding:6px 11px;font-size:12px;border-radius:8px;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-danger{background:rgba(251,113,133,0.12);border:1px solid rgba(251,113,133,0.25);color:var(--accent5);}
+
+/* Alerts */
+.alert{padding:10px 12px;border-radius:10px;font-size:13px;margin-bottom:8px;display:flex;gap:9px;align-items:flex-start;line-height:1.45;}
+.alert-red{background:rgba(251,113,133,0.1);border:1px solid rgba(251,113,133,0.25);color:#fca5b4;}
+.alert-orange{background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.25);color:#fdba74;}
+.alert-blue{background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.2);color:var(--accent3);}
+.alert-green{background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);color:var(--accent4);}
+
+/* Tasks */
+.task-item{display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--surface2);border-radius:10px;margin-bottom:7px;border:1px solid var(--border);}
+.chk{width:21px;height:21px;border-radius:6px;border:2px solid var(--border);cursor:pointer;flex-shrink:0;display:grid;place-items:center;font-size:11px;transition:all .15s;}
+.chk.done{background:var(--accent4);border-color:var(--accent4);color:#000;}
+.task-body{flex:1;min-width:0;}
+.task-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.task-name.done{text-decoration:line-through;color:var(--muted);}
+.task-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.task-meta.ov{color:var(--accent5);}
+.badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;white-space:nowrap;}
+.b-todo{background:rgba(124,111,253,0.15);color:var(--accent);}
+.b-prog{background:rgba(249,115,22,0.15);color:var(--accent2);}
+.b-done{background:rgba(74,222,128,0.15);color:var(--accent4);}
+.b-urg{background:rgba(251,113,133,0.15);color:var(--accent5);}
+
+/* Kanban */
+.kanban-wrap{display:flex;gap:9px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch;}
+.kanban-wrap::-webkit-scrollbar{display:none;}
+.k-col{min-width:190px;background:var(--surface2);border-radius:12px;padding:11px;border:1px solid var(--border);}
+.k-head{font-size:12px;font-weight:600;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;}
+.k-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px;margin-bottom:6px;}
+.k-card .kn{font-size:12px;font-weight:500;}
+.k-card .kd{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* Meeting */
+.meet-item{display:flex;gap:10px;align-items:flex-start;padding:11px;background:var(--surface2);border-radius:10px;margin-bottom:7px;border:1px solid var(--border);}
+.meet-time{min-width:48px;text-align:center;background:var(--surface);border-radius:8px;padding:5px 3px;}
+.meet-time .mh{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;}
+.meet-time .ma{font-size:10px;color:var(--muted);}
+.meet-body .mt{font-size:13px;font-weight:500;}
+.meet-body .mm{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* Standup */
+.sq{background:var(--surface2);border-left:3px solid var(--accent);padding:11px;border-radius:0 10px 10px 0;margin-bottom:9px;}
+.sq .ql{font-size:10px;color:var(--muted);margin-bottom:3px;}
+.sq .qt{font-size:13px;font-weight:500;margin-bottom:7px;}
+.up-item{display:flex;gap:9px;padding:11px;background:var(--surface2);border-radius:10px;margin-bottom:7px;border:1px solid var(--border);}
+.up-av{width:28px;height:28px;border-radius:7px;background:var(--accent);display:grid;place-items:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.up-body .un{font-size:13px;font-weight:600;}
+.up-body .ua{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4;}
+
+/* Chat */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100dvh - var(--nav-h) - env(safe-area-inset-bottom,0px) - env(safe-area-inset-top,0px) - 60px);}
+.chat-msgs{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px;display:flex;flex-direction:column;gap:9px;background:var(--surface2);border-radius:12px;margin-bottom:9px;border:1px solid var(--border);}
+.chat-msgs::-webkit-scrollbar{width:3px;}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.msg{max-width:85%;padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.5;}
+.msg-u{background:var(--accent);color:#fff;align-self:flex-end;border-radius:12px 12px 4px 12px;}
+.msg-b{background:var(--surface);border:1px solid var(--border);align-self:flex-start;border-radius:12px 12px 12px 4px;}
+.typing span{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--muted);margin:0 2px;animation:ty .8s infinite;}
+.typing span:nth-child(2){animation-delay:.15s;}
+.typing span:nth-child(3){animation-delay:.3s;}
+@keyframes ty{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.chat-row{display:flex;gap:7px;}
+.chat-row input{flex:1;}
+.chat-row .send-btn{padding:11px 14px;border-radius:10px;font-size:15px;background:var(--accent);color:#fff;border:none;cursor:pointer;flex-shrink:0;}
+.quick-btns{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;}
+.qbtn{padding:6px 10px;border-radius:8px;font-size:11px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;}
+.qbtn:active{border-color:var(--accent);color:var(--accent);}
+
+/* CA Calendar */
+.ca-filter{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.filter-btn{padding:6px 12px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.filter-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(124,111,253,0.1);}
+.ca-item{display:flex;gap:10px;align-items:flex-start;padding:11px;background:var(--surface2);border-radius:10px;margin-bottom:7px;border:1px solid var(--border);}
+.ca-date-box{min-width:44px;text-align:center;border-radius:9px;padding:5px 3px;flex-shrink:0;}
+.ca-date-box .cad{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;line-height:1;}
+.ca-date-box .cam{font-size:10px;margin-top:1px;}
+.ca-body{flex:1;}
+.ca-body .cat{font-size:13px;font-weight:500;line-height:1.3;}
+.ca-body .cad2{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4;}
+.ca-tag{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;margin-top:4px;}
+.tag-gst{background:rgba(34,211,238,0.12);color:var(--accent3);}
+.tag-tds{background:rgba(249,115,22,0.12);color:var(--accent2);}
+.tag-mca{background:rgba(124,111,253,0.12);color:var(--accent);}
+.tag-it{background:rgba(74,222,128,0.12);color:var(--accent4);}
+.tag-icai{background:rgba(251,113,133,0.12);color:var(--accent5);}
+.tag-pf{background:rgba(250,199,117,0.14);color:#fac777;}
+.urgency-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.u-red{background:var(--accent5);}
+.u-orange{background:var(--accent2);}
+.u-gray{background:var(--muted);opacity:.5;}
+
+.sec-head{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin:14px 0 7px;}
+.fz12{font-size:12px;}.fz13{font-size:13px;}.muted{color:var(--muted);}.mt8{margin-top:8px;}.mt10{margin-top:10px;}
+
+/* Toast */
+.toast{position:fixed;bottom:calc(var(--nav-h) + 14px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(16px);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 18px;font-size:13px;white-space:nowrap;opacity:0;transition:all .25s;z-index:999;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* Setup overlay */
+.setup-overlay{position:fixed;inset:0;background:rgba(10,10,15,0.97);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow-y:auto;}
+.setup-overlay.hidden{display:none;}
+.setup-box{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:24px;}
+.setup-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:6px;}
+.setup-sub{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5;}
+.setup-step{background:var(--surface2);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border);}
+.setup-step-title{font-size:13px;font-weight:600;margin-bottom:4px;}
+.setup-step-desc{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:10px;}
+.setup-step input{margin-bottom:0;}
+.setup-divider{text-align:center;font-size:11px;color:var(--muted);margin:10px 0;}
+.firebase-hint{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.4;}
+.link{color:var(--accent);text-decoration:none;}
+.syncing{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent3);}
+.spin{display:inline-block;width:10px;height:10px;border:2px solid rgba(34,211,238,0.3);border-top-color:var(--accent3);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* User name badge */
+.user-badge{font-size:11px;background:rgba(124,111,253,0.15);color:var(--accent);padding:4px 10px;border-radius:20px;border:1px solid rgba(124,111,253,0.3);}
+</style>
+</head>
+<body>
+
+<!-- ── SETUP OVERLAY ─────────────────────────────────────────────────────── -->
+<div class="setup-overlay" id="setup-overlay">
+  <div class="setup-box">
+    <div style="font-size:32px;margin-bottom:8px;">🤖</div>
+    <div class="setup-title">ProjBot Setup</div>
+    <div class="setup-sub">One-time setup. Enter your details and the app is ready for your whole team.</div>
+
+    <div class="setup-step">
+      <div class="setup-step-title">👤 Your Name</div>
+      <div class="setup-step-desc">So the team knows who added tasks/standups.</div>
+      <input type="text" id="setup-name" placeholder="e.g. Rajesh CA" maxlength="30">
+    </div>
+
+    <div class="setup-step">
+      <div class="setup-step-title">🔑 Anthropic API Key</div>
+      <div class="setup-step-desc">Get free key at <a class="link" href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys. You get $5 free credits.</div>
+      <input type="password" id="setup-apikey" placeholder="sk-ant-api03-...">
+    </div>
+
+    <div class="setup-step">
+      <div class="setup-step-title">🔥 Firebase Config</div>
+      <div class="setup-step-desc">
+        1. Go to <a class="link" href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a><br>
+        2. Create project → Add Web App<br>
+        3. Enable Firestore Database (start in test mode)<br>
+        4. Paste your config values below:
+      </div>
+      <input type="text" id="fb-pid" placeholder="Project ID  (e.g. projbot-ca-12345)" style="margin-bottom:7px;">
+      <input type="text" id="fb-apikey" placeholder="Firebase API Key  (AIza...)" style="margin-bottom:7px;">
+      <input type="text" id="fb-appid" placeholder="App ID  (1:123...:web:abc...)">
+      <div class="firebase-hint">⚠ Keep Firestore rules as "test mode" for internal team use. Never share Firebase key publicly.</div>
+    </div>
+
+    <div class="setup-divider">── or skip Firebase to use local storage only ──</div>
+    <button class="btn btn-ghost btn-sm" onclick="skipFirebase()" style="width:100%;margin-bottom:10px;">Use local storage only (data won't sync to team)</button>
+
+    <button class="btn btn-primary" onclick="saveSetup()" style="margin-top:0;">Save & Start →</button>
+    <div id="setup-err" style="font-size:12px;color:var(--accent5);margin-top:8px;display:none;"></div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ───────────────────────────────────────────────────────────── -->
+<div class="app" id="main-app" style="display:none;">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-icon">🤖</div>
+      <div>
+        <div class="logo-title">ProjBot <span style="font-size:11px;color:var(--accent);font-family:'DM Sans',sans-serif;font-weight:500;margin-left:4px;">CA Edition</span></div>
+        <div class="logo-sub" id="topbar-sub">Project + Compliance Manager</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <span class="user-badge" id="user-badge">...</span>
+      <div class="status-pill" id="status-pill"><div class="dot"></div><span id="status-text">Live</span></div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- HOME -->
+    <div class="panel active" id="panel-home">
+      <div class="stats-row">
+        <div class="stat"><div class="stat-num" id="s-total">0</div><div class="stat-lbl">Tasks</div><div class="pbar mt8"><div class="pfill" id="p-total" style="width:100%;background:var(--accent)"></div></div></div>
+        <div class="stat"><div class="stat-num" style="color:var(--accent4)" id="s-done">0</div><div class="stat-lbl">Done</div><div class="pbar mt8"><div class="pfill" id="p-done" style="background:var(--accent4)"></div></div></div>
+        <div class="stat"><div class="stat-num" style="color:var(--accent5)" id="s-over">0</div><div class="stat-lbl">Overdue</div><div class="pbar mt8"><div class="pfill" id="p-over" style="background:var(--accent5)"></div></div></div>
+      </div>
+      <div class="sec-head">⚠ CA deadlines — next 7 days</div>
+      <div id="home-ca-alerts"></div>
+      <div class="sec-head">📌 Task alerts</div>
+      <div id="home-task-alerts"></div>
+      <div class="sec-head">📋 Task board</div>
+      <div class="kanban-wrap">
+        <div class="k-col"><div class="k-head"><span>To Do</span><span class="badge b-todo" id="kb-tc">0</span></div><div id="kb-t"></div></div>
+        <div class="k-col"><div class="k-head"><span>In Progress</span><span class="badge b-prog" id="kb-pc">0</span></div><div id="kb-p"></div></div>
+        <div class="k-col"><div class="k-head"><span>Done</span><span class="badge b-done" id="kb-dc">0</span></div><div id="kb-d"></div></div>
+      </div>
+      <div style="height:14px"></div>
+    </div>
+
+    <!-- TASKS -->
+    <div class="panel" id="panel-tasks">
+      <div class="card">
+        <div class="card-title">➕ Add task</div>
+        <label>Task name</label><input type="text" id="t-name" placeholder="e.g. File GSTR-3B for client">
+        <label>Assign to</label><input type="text" id="t-assign" placeholder="Name or leave blank for yourself">
+        <label>Due date</label><input type="date" id="t-due">
+        <label>Priority</label>
+        <select id="t-pri"><option value="normal">Normal</option><option value="urgent">Urgent</option></select>
+        <label>Status</label>
+        <select id="t-st"><option value="todo">To Do</option><option value="inprogress">In Progress</option><option value="done">Done</option></select>
+        <button class="btn btn-primary" onclick="addTask()">Add task ✓</button>
+      </div>
+      <div class="sec-head">All tasks</div>
+      <div id="task-list"></div>
+      <div style="height:14px"></div>
+    </div>
+
+    <!-- CA CALENDAR -->
+    <div class="panel" id="panel-ca">
+      <div class="card" style="padding:12px 13px;margin-bottom:10px;">
+        <div class="card-title" style="margin-bottom:2px;">🗓 CA Compliance Calendar</div>
+        <div class="card-sub" style="margin-bottom:0;">GST · TDS/TCS · MCA · Income Tax · ICAI · PF/ESI</div>
+      </div>
+      <div class="ca-filter">
+        <button class="filter-btn on" onclick="filterCA('all',this)">All</button>
+        <button class="filter-btn" onclick="filterCA('GST',this)">GST</button>
+        <button class="filter-btn" onclick="filterCA('TDS',this)">TDS/TCS</button>
+        <button class="filter-btn" onclick="filterCA('MCA',this)">MCA</button>
+        <button class="filter-btn" onclick="filterCA('IT',this)">Income Tax</button>
+        <button class="filter-btn" onclick="filterCA('ICAI',this)">ICAI</button>
+        <button class="filter-btn" onclick="filterCA('PF',this)">PF/ESI</button>
+      </div>
+      <div id="ca-list"></div>
+      <div style="height:14px"></div>
+    </div>
+
+    <!-- STANDUP -->
+    <div class="panel" id="panel-standup">
+      <div class="card">
+        <div class="card-title">📋 Daily standup</div>
+        <div class="card-sub">3 quick questions for today</div>
+        <div class="sq"><div class="ql">Q1</div><div class="qt">What did you work on yesterday?</div><textarea id="sq1" placeholder="e.g. Filed GSTR-3B for 3 clients..."></textarea></div>
+        <div class="sq"><div class="ql">Q2</div><div class="qt">What will you work on today?</div><textarea id="sq2" placeholder="e.g. Prepare TDS returns..."></textarea></div>
+        <div class="sq"><div class="ql">Q3</div><div class="qt">Any blockers or issues?</div><textarea id="sq3" placeholder="e.g. Waiting for client docs..."></textarea></div>
+        <button class="btn btn-primary" onclick="submitStandup()">Submit standup ✓</button>
+      </div>
+      <div class="sec-head">Team updates today</div>
+      <div id="standup-list"><div class="fz13 muted">No standups yet.</div></div>
+      <div style="height:14px"></div>
+    </div>
+
+    <!-- MEETINGS -->
+    <div class="panel" id="panel-meetings">
+      <div class="card">
+        <div class="card-title">📅 Schedule meeting</div>
+        <label>Title</label><input type="text" id="m-title" placeholder="e.g. Client audit review">
+        <label>Date</label><input type="date" id="m-date">
+        <label>Time</label><input type="time" id="m-time">
+        <label>Attendees</label><input type="text" id="m-att" placeholder="Alice, Bob, Carol">
+        <label>Notes</label><textarea id="m-notes" placeholder="Agenda or notes..."></textarea>
+        <button class="btn btn-primary" onclick="addMeeting()">Schedule meeting 📅</button>
+      </div>
+      <div class="sec-head">Upcoming meetings</div>
+      <div id="meet-list"><div class="fz13 muted">No meetings yet.</div></div>
+      <div style="height:14px"></div>
+    </div>
+
+    <!-- BOT -->
+    <div class="panel" id="panel-bot">
+      <div class="chat-wrap">
+        <div class="chat-msgs" id="chat-msgs">
+          <div class="msg msg-b">👋 Hi! I'm <strong>ProjBot</strong> — your CA practice assistant. I know your tasks, upcoming GST/TDS/MCA/IT deadlines, meetings and more. Ask me anything!</div>
+        </div>
+        <div class="chat-row">
+          <input type="text" id="chat-in" placeholder="Ask anything about your practice…" onkeydown="if(event.key==='Enter')sendMsg()">
+          <button class="send-btn" onclick="sendMsg()">↑</button>
+        </div>
+        <div class="quick-btns">
+          <button class="qbtn" onclick="qask('What CA deadlines are coming up this month?')">CA deadlines</button>
+          <button class="qbtn" onclick="qask('Summarize my tasks')">My tasks</button>
+          <button class="qbtn" onclick="qask('What is overdue?')">Overdue</button>
+          <button class="qbtn" onclick="qask('Explain GSTR-3B filing process')">GSTR-3B help</button>
+          <button class="qbtn" onclick="qask('What is the penalty for late TDS payment?')">TDS penalty</button>
+          <button class="qbtn" onclick="qask('Help me plan my day')">Plan my day</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="panel" id="panel-settings">
+      <div class="card">
+        <div class="card-title">⚙️ Settings</div>
+        <div class="card-sub">Manage your setup</div>
+        <div class="sec-head">Your profile</div>
+        <label>Your name</label>
+        <input type="text" id="set-name" placeholder="Your name">
+        <div class="sec-head">API Keys</div>
+        <label>Anthropic API Key</label>
+        <input type="password" id="set-apikey" placeholder="sk-ant-api03-...">
+        <div class="firebase-hint" style="margin-top:5px;">Get free key at console.anthropic.com → $5 free credits</div>
+        <div class="sec-head">Firebase</div>
+        <label>Project ID</label><input type="text" id="set-fbpid" placeholder="your-project-id">
+        <label>Firebase API Key</label><input type="text" id="set-fbapikey" placeholder="AIza...">
+        <label>App ID</label><input type="text" id="set-fbappid" placeholder="1:123...:web:abc...">
+        <button class="btn btn-primary" onclick="saveSettings()">Save Settings ✓</button>
+        <button class="btn btn-danger" onclick="clearAllData()" style="width:100%;margin-top:8px;text-align:center;">🗑 Clear all local data</button>
+      </div>
+      <div class="card" style="margin-top:0;">
+        <div class="card-title">📱 Install as App (PWA)</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:10px;">
+          <strong style="color:var(--text);">Android:</strong> Open in Chrome → tap ⋮ menu → "Add to Home screen"<br><br>
+          <strong style="color:var(--text);">iPhone:</strong> Open in Safari → tap Share → "Add to Home Screen"<br><br>
+          <strong style="color:var(--text);">Make APK (free):</strong><br>
+          1. Host this file on <a class="link" href="https://pages.github.com" target="_blank">GitHub Pages</a> (free)<br>
+          2. Go to <a class="link" href="https://www.pwabuilder.com" target="_blank">pwabuilder.com</a><br>
+          3. Paste your URL → Generate APK → Done!
+        </div>
+      </div>
+      <div style="height:14px"></div>
+    </div>
+
+  </div>
+
+  <!-- Bottom nav -->
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="switchTab('home',this)"><div class="ni">🏠</div>Home</button>
+    <button class="nav-btn" onclick="switchTab('tasks',this)"><div class="ni">✅</div>Tasks</button>
+    <button class="nav-btn" onclick="switchTab('ca',this)"><div class="ni">📆</div>CA Dates</button>
+    <button class="nav-btn" onclick="switchTab('standup',this)"><div class="ni">📋</div>Standup</button>
+    <button class="nav-btn" onclick="switchTab('meetings',this)"><div class="ni">📅</div>Meetings</button>
+    <button class="nav-btn" onclick="switchTab('settings',this)"><div class="ni">⚙️</div>Settings</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+// ── CONFIG ────────────────────────────────────────────────────────────────
+let CONFIG = {
+  userName: '',
+  apiKey: '',
+  fbProjectId: '',
+  fbApiKey: '',
+  fbAppId: '',
+  useFirebase: false
+};
+
+// Load saved config
+function loadConfig(){
+  try{
+    const s = localStorage.getItem('projbot_config');
+    if(s) CONFIG = {...CONFIG,...JSON.parse(s)};
+  }catch(e){}
+}
+
+function saveConfig(){
+  localStorage.setItem('projbot_config', JSON.stringify(CONFIG));
+}
+
+// ── SETUP ─────────────────────────────────────────────────────────────────
+window.saveSetup = function(){
+  const name = document.getElementById('setup-name').value.trim();
+  const apikey = document.getElementById('setup-apikey').value.trim();
+  const pid = document.getElementById('fb-pid').value.trim();
+  const fbkey = document.getElementById('fb-apikey').value.trim();
+  const appid = document.getElementById('fb-appid').value.trim();
+  const err = document.getElementById('setup-err');
+
+  if(!name){ err.textContent='Please enter your name.'; err.style.display='block'; return; }
+  if(!apikey){ err.textContent='Please enter your Anthropic API key.'; err.style.display='block'; return; }
+
+  CONFIG.userName = name;
+  CONFIG.apiKey = apikey;
+
+  if(pid && fbkey && appid){
+    CONFIG.fbProjectId = pid;
+    CONFIG.fbApiKey = fbkey;
+    CONFIG.fbAppId = appid;
+    CONFIG.useFirebase = true;
+  } else {
+    CONFIG.useFirebase = false;
+  }
+
+  saveConfig();
+  startApp();
+};
+
+window.skipFirebase = function(){
+  const name = document.getElementById('setup-name').value.trim();
+  const apikey = document.getElementById('setup-apikey').value.trim();
+  const err = document.getElementById('setup-err');
+  if(!name){ err.textContent='Please enter your name first.'; err.style.display='block'; return; }
+  if(!apikey){ err.textContent='Please enter your Anthropic API key first.'; err.style.display='block'; return; }
+  CONFIG.userName = name;
+  CONFIG.apiKey = apikey;
+  CONFIG.useFirebase = false;
+  saveConfig();
+  startApp();
+};
+
+// ── FIREBASE ──────────────────────────────────────────────────────────────
+let db = null;
+let unsubscribers = [];
+
+async function initFirebase(){
+  if(!CONFIG.useFirebase) return false;
+  try{
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+    const { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy, serverTimestamp }
+      = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+
+    const app = initializeApp({
+      apiKey: CONFIG.fbApiKey,
+      authDomain: `${CONFIG.fbProjectId}.firebaseapp.com`,
+      projectId: CONFIG.fbProjectId,
+      appId: CONFIG.fbAppId
+    });
+    db = getFirestore(app);
+
+    // Store Firestore helpers globally
+    window._fs = { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy, serverTimestamp };
+
+    // Set up real-time listeners
+    setupListeners();
+    setStatus('online');
+    return true;
+  }catch(e){
+    console.error('Firebase init failed:', e);
+    setStatus('offline');
+    CONFIG.useFirebase = false;
+    toast('Firebase connection failed. Using local storage.');
+    return false;
+  }
+}
+
+function setupListeners(){
+  const {collection, onSnapshot, query, orderBy} = window._fs;
+  // Tasks
+  const qT = query(collection(db,'tasks'), orderBy('createdAt','desc'));
+  unsubscribers.push(onSnapshot(qT, snap=>{
+    tasks = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderAll();
+  }));
+  // Meetings
+  const qM = query(collection(db,'meetings'), orderBy('createdAt','desc'));
+  unsubscribers.push(onSnapshot(qM, snap=>{
+    meetings = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderMeetings();
+  }));
+  // Standups (today only)
+  const today = new Date().toISOString().slice(0,10);
+  const qS = query(collection(db,'standups'), orderBy('createdAt','desc'));
+  unsubscribers.push(onSnapshot(qS, snap=>{
+    standups = snap.docs.map(d=>({id:d.id,...d.data()})).filter(s=>s.date===today);
+    renderStandups();
+  }));
+}
+
+// ── CA COMPLIANCE DATA ────────────────────────────────────────────────────
+const CA_DATES = [
+  {cat:'GST',day:11,month:3,title:'GSTR-1 (Monthly – March)',desc:'Outward supplies for taxpayers with turnover > ₹5 Cr'},
+  {cat:'GST',day:13,month:3,title:'GSTR-1 IFF (Quarterly)',desc:'Invoice Furnishing Facility for QRMP taxpayers – March quarter'},
+  {cat:'GST',day:20,month:3,title:'GSTR-3B (Monthly – March)',desc:'Monthly summary return & tax payment for regular taxpayers'},
+  {cat:'GST',day:22,month:3,title:'GSTR-3B Quarterly – Category I states',desc:'Chhattisgarh, MP, Gujarat, Maharashtra, Karnataka, Goa, Kerala, TN, Telangana, AP, Odisha, Lakshadweep'},
+  {cat:'GST',day:24,month:3,title:'GSTR-3B Quarterly – Category II states',desc:'All remaining states and UTs'},
+  {cat:'GST',day:28,month:3,title:'GSTR-11 (UIN holders – March)',desc:'Inward supplies return for embassies & UN bodies'},
+  {cat:'GST',day:11,month:4,title:'GSTR-1 (Monthly – April)',desc:'Monthly outward supplies return'},
+  {cat:'GST',day:20,month:4,title:'GSTR-3B (Monthly – April)',desc:'Monthly summary return & tax payment'},
+  {cat:'GST',day:30,month:4,title:'GST CMP-08 (Q4 Jan–Mar)',desc:'Quarterly tax payment statement by composition dealers'},
+  {cat:'GST',day:30,month:4,title:'GSTR-4 (Annual – Composition)',desc:'Annual return for composition taxpayers for FY 2024-25'},
+  {cat:'GST',day:11,month:5,title:'GSTR-1 (Monthly – May)',desc:'Monthly outward supplies return'},
+  {cat:'GST',day:13,month:5,title:'GSTR-1 Quarterly Q4 (QRMP)',desc:'Quarterly outward supplies for Jan–Mar period'},
+  {cat:'GST',day:20,month:5,title:'GSTR-3B (Monthly – May)',desc:'Monthly summary return & tax payment'},
+  {cat:'GST',day:11,month:6,title:'GSTR-1 (Monthly – June)',desc:'Monthly outward supplies return'},
+  {cat:'GST',day:20,month:6,title:'GSTR-3B (Monthly – June)',desc:'Monthly summary return & tax payment'},
+  {cat:'GST',day:31,month:12,title:'GSTR-9 & 9C (Annual Return)',desc:'Annual return & reconciliation statement for FY 2024-25'},
+  {cat:'TDS',day:7,month:4,title:'TDS/TCS Deposit – March 2026',desc:'Deposit TDS/TCS deducted in March'},
+  {cat:'TDS',day:7,month:5,title:'TDS/TCS Deposit – April 2026',desc:'Deposit TDS/TCS deducted in April 2026'},
+  {cat:'TDS',day:7,month:6,title:'TDS/TCS Deposit – May 2026',desc:'Deposit TDS/TCS deducted in May 2026'},
+  {cat:'TDS',day:30,month:4,title:'Form 24Q – Q4 (Salary TDS Return)',desc:'Quarterly TDS return for salaries for Jan–Mar quarter'},
+  {cat:'TDS',day:31,month:5,title:'Form 26Q/27Q – Q4 Return',desc:'TDS return for non-salary & NRI payments for Q4'},
+  {cat:'TDS',day:31,month:5,title:'Form 16 & 16A Issuance',desc:'Issue TDS certificates to employees and deductees'},
+  {cat:'TDS',day:15,month:7,title:'TDS Return Q1 (Apr–Jun)',desc:'Quarterly TDS/TCS returns – Form 24Q, 26Q, 27Q'},
+  {cat:'TDS',day:15,month:10,title:'TDS Return Q2 (Jul–Sep)',desc:'Quarterly TDS/TCS returns – Form 24Q, 26Q, 27Q'},
+  {cat:'TDS',day:15,month:1,title:'TDS Return Q3 (Oct–Dec)',desc:'Quarterly TDS/TCS returns – Form 24Q, 26Q, 27Q'},
+  {cat:'TDS',day:15,month:4,title:'TDS Return Q4 (Jan–Mar)',desc:'Quarterly TDS/TCS returns – Form 24Q (due 30 Apr for salary)'},
+  {cat:'MCA',day:25,month:4,title:'LLP Form 11 (Annual Return)',desc:'Annual return of LLP for FY 2024-25'},
+  {cat:'MCA',day:30,month:4,title:'DIR-3 KYC (Director KYC)',desc:'Annual KYC for all directors holding DIN as of 31 March'},
+  {cat:'MCA',day:30,month:5,title:'LLP Form 8 (Statement of Accounts)',desc:'Statement of accounts & solvency for LLP for FY 2024-25'},
+  {cat:'MCA',day:30,month:6,title:'DPT-3 (Deposits/Loans Return)',desc:'Annual return for outstanding deposits & loans by companies'},
+  {cat:'MCA',day:30,month:6,title:'MSME Form I (Half-yearly Oct–Mar)',desc:'Half-yearly return for dues to MSME vendors exceeding 45 days'},
+  {cat:'MCA',day:30,month:9,title:'MSME Form I (Half-yearly Apr–Sep)',desc:'Half-yearly return for dues to MSME vendors exceeding 45 days'},
+  {cat:'MCA',day:30,month:9,title:'AOC-4 (Financial Statements)',desc:'Filing of financial statements with ROC for FY 2024-25'},
+  {cat:'MCA',day:30,month:9,title:'MGT-7 / MGT-7A (Annual Return)',desc:'Company annual return (within 60 days of AGM)'},
+  {cat:'MCA',day:30,month:10,title:'ADT-1 (Auditor Appointment)',desc:'Intimation of auditor appointment within 15 days of AGM'},
+  {cat:'IT',day:15,month:3,title:'Advance Tax – Q4 Final (100%)',desc:'Final instalment of advance tax for FY 2025-26'},
+  {cat:'IT',day:15,month:6,title:'Advance Tax Q1 – 15%',desc:'First instalment of advance tax for FY 2026-27'},
+  {cat:'IT',day:15,month:9,title:'Advance Tax Q2 – 45%',desc:'Second instalment of advance tax for FY 2026-27'},
+  {cat:'IT',day:15,month:12,title:'Advance Tax Q3 – 75%',desc:'Third instalment of advance tax for FY 2026-27'},
+  {cat:'IT',day:31,month:7,title:'ITR Filing – Individuals/HUF (Non-audit)',desc:'Last date to file ITR for FY 2025-26 without audit requirement'},
+  {cat:'IT',day:30,month:9,title:'Tax Audit Report – Form 3CA/3CB/3CD',desc:'Filing tax audit report'},
+  {cat:'IT',day:31,month:10,title:'ITR Filing – Audit cases & Companies',desc:'Extended due date for ITR filing for audit-required businesses'},
+  {cat:'IT',day:31,month:12,title:'ITR-U (Updated Return) – AY 2024-25',desc:'Last date to file Updated Return for FY 2023-24'},
+  {cat:'IT',day:31,month:3,title:'Tax-Saving Investments (Section 80C/D)',desc:'Last date for 80C investments for FY 2025-26'},
+  {cat:'ICAI',day:30,month:4,title:'Certificate of Practice (CoP) Renewal',desc:'Renew COP for FY 2026-27'},
+  {cat:'ICAI',day:30,month:6,title:'UDIN Compliance – Q1',desc:'Generate UDIN for all certifications in Apr–Jun quarter'},
+  {cat:'ICAI',day:30,month:9,title:'UDIN Compliance – Q2',desc:'Generate UDIN for all certifications in Jul–Sep quarter'},
+  {cat:'ICAI',day:31,month:12,title:'CPE Hours – Annual Compliance',desc:'Minimum 20 structured CPE hours per year required'},
+  {cat:'ICAI',day:28,month:2,title:'Peer Review Mandate',desc:'Firms in Stage III/IV must complete peer review'},
+  {cat:'ICAI',day:31,month:3,title:'Ethics & Standards Compliance',desc:'Annual compliance with ICAI ethical standards'},
+  {cat:'PF',day:15,month:4,title:'EPF Contribution – March wages',desc:'Deposit PF (12% employee + 12% employer) for March 2026'},
+  {cat:'PF',day:21,month:4,title:'ESI Contribution – March',desc:'Deposit ESI contributions for March 2026'},
+  {cat:'PF',day:25,month:4,title:'PF Return ECR – March',desc:'File Electronic Challan cum Return for March 2026'},
+  {cat:'PF',day:15,month:5,title:'EPF Contribution – April wages',desc:'Deposit PF contributions for April 2026'},
+  {cat:'PF',day:21,month:5,title:'ESI Contribution – April',desc:'Deposit ESI contributions for April 2026'},
+  {cat:'PF',day:15,month:6,title:'EPF Contribution – May wages',desc:'Deposit PF contributions for May 2026'},
+  {cat:'PF',day:21,month:6,title:'ESI Contribution – May',desc:'Deposit ESI contributions for May 2026'},
+  {cat:'PF',day:11,month:5,title:'ESI Half-yearly Return (Oct–Mar)',desc:'Six-monthly contribution return on ESIC portal'},
+  {cat:'PF',day:11,month:11,title:'ESI Half-yearly Return (Apr–Sep)',desc:'Six-monthly contribution return on ESIC portal'},
+  {cat:'PF',day:30,month:4,title:'Professional Tax Annual Return',desc:'Annual PT return filing (Maharashtra, Karnataka, Gujarat etc.)'},
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let tasks = [], meetings = [], standups = [], caFilter = 'all';
+let chatHistory = [];
+
+const today = new Date(); today.setHours(0,0,0,0);
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// ── LOCAL STORAGE HELPERS ─────────────────────────────────────────────────
+function saveLocal(){
+  localStorage.setItem('projbot_tasks', JSON.stringify(tasks));
+  localStorage.setItem('projbot_meetings', JSON.stringify(meetings));
+  localStorage.setItem('projbot_standups', JSON.stringify(standups));
+}
+function loadLocal(){
+  try{ tasks = JSON.parse(localStorage.getItem('projbot_tasks')||'[]'); }catch(e){ tasks=[]; }
+  try{ meetings = JSON.parse(localStorage.getItem('projbot_meetings')||'[]'); }catch(e){ meetings=[]; }
+  try{
+    const today = new Date().toISOString().slice(0,10);
+    standups = (JSON.parse(localStorage.getItem('projbot_standups')||'[]')).filter(s=>s.date===today);
+  }catch(e){ standups=[]; }
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function fmtDate(s){ if(!s)return'—'; const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); }
+function isOv(due){ if(!due)return false; return new Date(due+'T23:59:59')<new Date(); }
+function dUntil(due){ if(!due)return 999; return Math.ceil((new Date(due+'T00:00:00')-new Date())/86400000); }
+function caDate(c){ const y=today.getFullYear(); let d=new Date(y,c.month-1,c.day); if(d<today)d=new Date(y+1,c.month-1,c.day); return d; }
+function caDU(c){ return Math.ceil((caDate(c)-today)/86400000); }
+function setStatus(s){
+  const pill=document.getElementById('status-pill');
+  const txt=document.getElementById('status-text');
+  if(s==='online'){pill.className='status-pill';txt.textContent='Live';}
+  else if(s==='syncing'){pill.className='status-pill';txt.textContent='Syncing…';}
+  else{pill.className='status-pill offline';txt.textContent='Offline';}
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────
+window.switchTab = function(tab, btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(tab==='settings') loadSettingsForm();
+  renderAll();
+  document.querySelector('.content').scrollTop=0;
+};
+
+// ── RENDER ────────────────────────────────────────────────────────────────
+function renderAll(){ renderStats(); renderKanban(); renderTaskList(); renderHomeAlerts(); renderCA(); renderMeetings(); renderStandups(); }
+
+function renderStats(){
+  const tot=tasks.length, dn=tasks.filter(t=>t.status==='done').length, ov=tasks.filter(t=>isOv(t.due)&&t.status!=='done').length;
+  document.getElementById('s-total').textContent=tot;
+  document.getElementById('s-done').textContent=dn;
+  document.getElementById('s-over').textContent=ov;
+  document.getElementById('p-done').style.width=(tot?dn/tot*100:0)+'%';
+  document.getElementById('p-over').style.width=(tot?ov/tot*100:0)+'%';
+}
+
+function renderKanban(){
+  [['todo','kb-t','kb-tc'],['inprogress','kb-p','kb-pc'],['done','kb-d','kb-dc']].forEach(([s,id,cid])=>{
+    const col=tasks.filter(t=>t.status===s);
+    document.getElementById(cid).textContent=col.length;
+    document.getElementById(id).innerHTML=col.map(t=>`<div class="k-card"><div class="kn">${t.name}</div><div class="kd">${fmtDate(t.due)} ${t.priority==='urgent'?'🔴':''} ${t.assignedTo?'· '+t.assignedTo:''}</div></div>`).join('')||'<div class="fz12 muted" style="padding:4px">Empty</div>';
+  });
+}
+
+function renderTaskList(){
+  const el=document.getElementById('task-list'); if(!el)return;
+  if(!tasks.length){ el.innerHTML='<div class="fz13 muted">No tasks yet.</div>'; return; }
+  el.innerHTML=tasks.map(t=>`
+    <div class="task-item">
+      <div class="chk ${t.status==='done'?'done':''}" onclick="toggleTask('${t.id}')">${t.status==='done'?'✓':''}</div>
+      <div class="task-body">
+        <div class="task-name ${t.status==='done'?'done':''}">${t.name}${t.priority==='urgent'?' <span class="badge b-urg">Urgent</span>':''}</div>
+        <div class="task-meta ${isOv(t.due)&&t.status!=='done'?'ov':''}">
+          Due: ${fmtDate(t.due)}${isOv(t.due)&&t.status!=='done'?' ⚠ Overdue':''}
+          ${t.assignedTo?` · 👤 ${t.assignedTo}`:''}
+          ${t.addedBy?` · Added by ${t.addedBy}`:''}
+        </div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="delTask('${t.id}')">✕</button>
+    </div>`).join('');
+}
+
+function renderHomeAlerts(){
+  const soon=CA_DATES.filter(c=>caDU(c)>=0&&caDU(c)<=7).sort((a,b)=>caDU(a)-caDU(b));
+  const el1=document.getElementById('home-ca-alerts');
+  const tagMap={GST:'tag-gst',TDS:'tag-tds',MCA:'tag-mca',IT:'tag-it',ICAI:'tag-icai',PF:'tag-pf'};
+  if(el1) el1.innerHTML=soon.length?soon.slice(0,5).map(c=>{
+    const d=caDU(c);
+    const cls=d===0?'alert-red':d<=3?'alert-orange':'alert-blue';
+    return `<div class="alert ${cls}"><div>📌</div><div><strong>${c.title}</strong><br>${d===0?'Due TODAY':d===1?'Due tomorrow':'Due in '+d+' days'} · ${MONTHS[c.month-1]} ${c.day} <span class="ca-tag ${tagMap[c.cat]}">${c.cat}</span></div></div>`;
+  }).join(''):'<div class="alert alert-green"><div>✓</div><div>No CA deadlines in the next 7 days.</div></div>';
+
+  const urg=tasks.filter(t=>t.status!=='done'&&(isOv(t.due)||dUntil(t.due)<=3));
+  const el2=document.getElementById('home-task-alerts');
+  if(el2) el2.innerHTML=urg.length?urg.map(t=>`<div class="alert ${isOv(t.due)?'alert-red':'alert-orange'}"><div>${isOv(t.due)?'⚠':'⏰'}</div><div><strong>${t.name}</strong><br>${isOv(t.due)?'Overdue since '+fmtDate(t.due):'Due in '+dUntil(t.due)+' day(s)'}${t.assignedTo?' · 👤 '+t.assignedTo:''}</div></div>`).join(''):'<div class="fz13 muted">No urgent tasks. 🎉</div>';
+}
+
+window.filterCA = function(cat, btn){
+  caFilter=cat;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderCA();
+};
+
+function renderCA(){
+  const el=document.getElementById('ca-list'); if(!el)return;
+  const tagMap={GST:'tag-gst',TDS:'tag-tds',MCA:'tag-mca',IT:'tag-it',ICAI:'tag-icai',PF:'tag-pf'};
+  let list=(caFilter==='all'?CA_DATES:CA_DATES.filter(c=>c.cat===caFilter)).slice().sort((a,b)=>caDU(a)-caDU(b));
+  el.innerHTML=list.map(c=>{
+    const d=caDU(c);
+    const bg=d===0?'rgba(251,113,133,0.18)':d<=3?'rgba(249,115,22,0.15)':'var(--surface2)';
+    const tc=d===0?'var(--accent5)':d<=3?'var(--accent2)':'var(--text)';
+    const dot=d===0?'u-red':d<=3?'u-orange':'u-gray';
+    return `<div class="ca-item">
+      <div class="ca-date-box" style="background:${bg}"><div class="cad" style="color:${tc}">${c.day}</div><div class="cam" style="color:${tc}">${MONTHS[c.month-1]}</div></div>
+      <div class="ca-body">
+        <div class="cat">${c.title}</div>
+        <div class="cad2">${c.desc}</div>
+        <span class="ca-tag ${tagMap[c.cat]}">${c.cat}</span>
+        <span style="font-size:10px;color:var(--muted);margin-left:5px">${d===0?'⚠ TODAY':d===1?'Tomorrow':d+' days'}</span>
+      </div>
+      <div class="urgency-dot ${dot}"></div>
+    </div>`;
+  }).join('');
+}
+
+function renderMeetings(){
+  const el=document.getElementById('meet-list'); if(!el)return;
+  if(!meetings.length){ el.innerHTML='<div class="fz13 muted">No meetings yet.</div>'; return; }
+  el.innerHTML=meetings.map(m=>{
+    const [h,mn]=m.time.split(':'); const hr=(+h)%12||12, ap=(+h)<12?'AM':'PM';
+    return `<div class="meet-item"><div class="meet-time"><div class="mh">${hr}:${mn}</div><div class="ma">${ap}</div></div><div class="meet-body" style="flex:1"><div class="mt">${m.title}</div><div class="mm">${fmtDate(m.date)} · ${m.att||'—'}</div>${m.notes?`<div class="mm">${m.notes}</div>`:''}${m.addedBy?`<div class="mm">Added by ${m.addedBy}</div>`:''}</div><button class="btn btn-danger btn-sm" onclick="delMeeting('${m.id}')">✕</button></div>`;
+  }).join('');
+}
+
+function renderStandups(){
+  const el=document.getElementById('standup-list'); if(!el)return;
+  if(!standups.length){ el.innerHTML='<div class="fz13 muted">No standups today.</div>'; return; }
+  el.innerHTML=standups.map(s=>`<div class="up-item"><div class="up-av">${s.name[0].toUpperCase()}</div><div class="up-body" style="flex:1"><div class="un">${s.name} <span class="fz12 muted">· ${s.time}</span></div><div class="ua">✅ ${s.q1}</div><div class="ua">🎯 ${s.q2}</div>${s.q3?`<div class="ua">🚧 ${s.q3}</div>`:''}</div></div>`).join('');
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────
+window.addTask = async function(){
+  const name=document.getElementById('t-name').value.trim();
+  if(!name){ toast('Enter a task name'); return; }
+  const task = {
+    name,
+    assignedTo: document.getElementById('t-assign').value.trim() || CONFIG.userName,
+    due: document.getElementById('t-due').value,
+    priority: document.getElementById('t-pri').value,
+    status: document.getElementById('t-st').value,
+    addedBy: CONFIG.userName,
+  };
+  if(CONFIG.useFirebase && db){
+    const {collection, addDoc, serverTimestamp} = window._fs;
+    await addDoc(collection(db,'tasks'),{...task, createdAt:serverTimestamp()});
+  } else {
+    task.id = 'local_'+Date.now();
+    tasks.unshift(task);
+    saveLocal();
+    renderAll();
+  }
+  document.getElementById('t-name').value='';
+  document.getElementById('t-due').value='';
+  document.getElementById('t-assign').value='';
+  toast('Task added ✓');
+};
+
+window.toggleTask = async function(id){
+  const t=tasks.find(t=>t.id===id);
+  if(!t)return;
+  const newStatus = t.status==='done'?'todo':'done';
+  if(CONFIG.useFirebase && db && !id.startsWith('local_')){
+    const {doc, updateDoc} = window._fs;
+    await updateDoc(doc(db,'tasks',id),{status:newStatus});
+  } else {
+    t.status=newStatus;
+    saveLocal();
+    renderAll();
+  }
+};
+
+window.delTask = async function(id){
+  if(CONFIG.useFirebase && db && !id.startsWith('local_')){
+    const {doc, deleteDoc} = window._fs;
+    await deleteDoc(doc(db,'tasks',id));
+  } else {
+    tasks=tasks.filter(t=>t.id!==id);
+    saveLocal();
+    renderAll();
+  }
+  toast('Removed');
+};
+
+window.addMeeting = async function(){
+  const title=document.getElementById('m-title').value.trim(), date=document.getElementById('m-date').value, time=document.getElementById('m-time').value;
+  if(!title||!date||!time){ toast('Fill title, date & time'); return; }
+  const meeting = {
+    title, date, time,
+    att: document.getElementById('m-att').value.trim(),
+    notes: document.getElementById('m-notes').value.trim(),
+    addedBy: CONFIG.userName,
+  };
+  if(CONFIG.useFirebase && db){
+    const {collection, addDoc, serverTimestamp} = window._fs;
+    await addDoc(collection(db,'meetings'),{...meeting, createdAt:serverTimestamp()});
+  } else {
+    meeting.id='local_'+Date.now();
+    meetings.unshift(meeting);
+    saveLocal();
+    renderMeetings();
+  }
+  ['m-title','m-date','m-time','m-att','m-notes'].forEach(i=>document.getElementById(i).value='');
+  toast('Meeting scheduled 📅');
+};
+
+window.delMeeting = async function(id){
+  if(CONFIG.useFirebase && db && !id.startsWith('local_')){
+    const {doc, deleteDoc} = window._fs;
+    await deleteDoc(doc(db,'meetings',id));
+  } else {
+    meetings=meetings.filter(m=>m.id!==id);
+    saveLocal();
+    renderMeetings();
+  }
+};
+
+window.submitStandup = async function(){
+  const q1=document.getElementById('sq1').value.trim(), q2=document.getElementById('sq2').value.trim(), q3=document.getElementById('sq3').value.trim();
+  if(!q1||!q2){ toast('Answer at least Q1 & Q2'); return; }
+  const standup = {
+    name: CONFIG.userName,
+    q1, q2, q3,
+    date: new Date().toISOString().slice(0,10),
+    time: new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
+  };
+  if(CONFIG.useFirebase && db){
+    const {collection, addDoc, serverTimestamp} = window._fs;
+    await addDoc(collection(db,'standups'),{...standup, createdAt:serverTimestamp()});
+  } else {
+    standup.id='local_'+Date.now();
+    standups.unshift(standup);
+    saveLocal();
+    renderStandups();
+  }
+  ['sq1','sq2','sq3'].forEach(i=>document.getElementById(i).value='');
+  toast('Standup submitted ✓');
+};
+
+// ── CLAUDE BOT ────────────────────────────────────────────────────────────
+function getCtx(){
+  const dn=tasks.filter(t=>t.status==='done').length;
+  const ov=tasks.filter(t=>isOv(t.due)&&t.status!=='done').map(t=>t.name+' (due '+t.due+', assigned: '+(t.assignedTo||'—')+')').join(', ')||'none';
+  const ca7=CA_DATES.filter(c=>caDU(c)>=0&&caDU(c)<=7).map(c=>`${c.title} on ${MONTHS[c.month-1]} ${c.day}`).join(', ')||'none';
+  const ca30=CA_DATES.filter(c=>caDU(c)>=0&&caDU(c)<=30).map(c=>`${c.title} – ${MONTHS[c.month-1]} ${c.day} (${c.cat})`).join('; ')||'none';
+  return `You are ProjBot, a knowledgeable assistant for a Chartered Accountant (CA) firm in India. You help with GST, TDS/TCS, MCA/ROC, Income Tax, ICAI compliance, PF/ESI, and general practice management.
+
+Today's date: ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}
+Current user: ${CONFIG.userName}
+
+Team task status:
+- Total tasks: ${tasks.length}, Done: ${dn}, In progress: ${tasks.filter(t=>t.status==='inprogress').length}
+- Overdue tasks: ${ov}
+- CA deadlines next 7 days: ${ca7}
+- CA deadlines next 30 days: ${ca30}
+- Meetings scheduled: ${meetings.length}
+- Team standups today: ${standups.length} (from: ${standups.map(s=>s.name).join(', ')||'none'})
+
+Instructions: Be helpful, accurate and concise. For compliance questions, give precise answers with penalty/interest rates where relevant. Use bullet points for lists. Keep responses under 200 words unless a detailed compliance explanation is needed. Always be friendly and professional. When referring to tasks, mention who they're assigned to.`;
+}
+
+window.sendMsg = async function(){
+  if(!CONFIG.apiKey){
+    addMsg('⚠ No API key set. Go to ⚙️ Settings and add your Anthropic API key.','b');
+    return;
+  }
+  const input=document.getElementById('chat-in');
+  const msg=input.value.trim(); if(!msg)return;
+  input.value='';
+  addMsg(msg,'u');
+  chatHistory.push({role:'user',content:msg});
+  showTyping();
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true','x-api-key':CONFIG.apiKey,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:getCtx(),messages:chatHistory.slice(-20)})
+    });
+    hideTyping();
+    if(!res.ok){
+      const err=await res.json().catch(()=>({}));
+      const msg=err.error?.message||`HTTP ${res.status}`;
+      addMsg(`⚠ API Error: ${msg}`,'b');
+      chatHistory.pop();
+      return;
+    }
+    const data=await res.json();
+    const reply=data.content?.[0]?.text||'Sorry, could not get a response.';
+    addMsg(reply,'b');
+    chatHistory.push({role:'assistant',content:reply});
+  }catch(e){
+    hideTyping();
+    addMsg('⚠ Connection error. Check your internet and API key in Settings.','b');
+    chatHistory.pop();
+  }
+};
+
+window.qask = function(q){ document.getElementById('chat-in').value=q; window.sendMsg(); };
+
+function addMsg(text, role){
+  const area=document.getElementById('chat-msgs');
+  const div=document.createElement('div');
+  div.className=`msg msg-${role}`;
+  div.innerHTML=text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>');
+  area.appendChild(div); area.scrollTop=area.scrollHeight;
+}
+
+let typEl=null;
+function showTyping(){ const area=document.getElementById('chat-msgs'); typEl=document.createElement('div'); typEl.className='msg msg-b typing'; typEl.innerHTML='<span></span><span></span><span></span>'; area.appendChild(typEl); area.scrollTop=area.scrollHeight; }
+function hideTyping(){ if(typEl){ typEl.remove(); typEl=null; } }
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────
+function loadSettingsForm(){
+  document.getElementById('set-name').value=CONFIG.userName||'';
+  document.getElementById('set-apikey').value=CONFIG.apiKey||'';
+  document.getElementById('set-fbpid').value=CONFIG.fbProjectId||'';
+  document.getElementById('set-fbapikey').value=CONFIG.fbApiKey||'';
+  document.getElementById('set-fbappid').value=CONFIG.fbAppId||'';
+}
+
+window.saveSettings = async function(){
+  CONFIG.userName=document.getElementById('set-name').value.trim()||CONFIG.userName;
+  CONFIG.apiKey=document.getElementById('set-apikey').value.trim()||CONFIG.apiKey;
+  const pid=document.getElementById('set-fbpid').value.trim();
+  const fbk=document.getElementById('set-fbapikey').value.trim();
+  const aid=document.getElementById('set-fbappid').value.trim();
+  if(pid&&fbk&&aid){
+    CONFIG.fbProjectId=pid; CONFIG.fbApiKey=fbk; CONFIG.fbAppId=aid; CONFIG.useFirebase=true;
+  }
+  saveConfig();
+  document.getElementById('user-badge').textContent=CONFIG.userName;
+  toast('Settings saved ✓');
+  if(CONFIG.useFirebase && !db) await initFirebase();
+};
+
+window.clearAllData = function(){
+  if(!confirm('Clear all local data? Firebase data will NOT be deleted.'))return;
+  localStorage.clear();
+  toast('Local data cleared. Reload to set up again.');
+  setTimeout(()=>location.reload(),2000);
+};
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+window.toast = function(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400); };
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+async function startApp(){
+  document.getElementById('setup-overlay').classList.add('hidden');
+  document.getElementById('main-app').style.display='flex';
+  document.getElementById('user-badge').textContent=CONFIG.userName;
+
+  if(CONFIG.useFirebase){
+    setStatus('syncing');
+    document.getElementById('topbar-sub').textContent='Connecting to team…';
+    const ok = await initFirebase();
+    if(ok){
+      document.getElementById('topbar-sub').textContent='Team data · Live sync';
+    } else {
+      loadLocal();
+      document.getElementById('topbar-sub').textContent='Local storage (Firebase failed)';
+      renderAll();
+    }
+  } else {
+    loadLocal();
+    setStatus('offline');
+    document.getElementById('topbar-sub').textContent='Local storage only';
+    renderAll();
+  }
+
+  renderCA();
+}
+
+loadConfig();
+if(CONFIG.userName && CONFIG.apiKey){
+  startApp();
+} else {
+  document.getElementById('setup-overlay').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
